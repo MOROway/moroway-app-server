@@ -7,7 +7,7 @@ public class Globals {
 	public static final ArrayList<Sessions> SESSIONS = new ArrayList<>();
     public static final ArrayList<Game> GAMES = new ArrayList<>();
 	
-	public static final double VERSION_CURRENT = 6.1;
+	public static final double VERSION_CURRENT = 6.2;
 	public static final double VERSION_MIN = 6.0;
 	
 	public static final int ERROR_LEVEL_OKAY = 0;
