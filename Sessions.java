@@ -20,6 +20,8 @@ public class Sessions {
 	private Session session;
 	private int sessionId;
 	private String sessionName;
+	private boolean locomotive = false;
+	private boolean pausedBy = false;
 
 	private Game game;
 
@@ -56,14 +58,23 @@ public class Sessions {
 		Globals.SESSIONS.remove(this);
 		if (game != null) {
 			game.users.remove(this);
+			game.gameActive--;
 			Message message = new Message();
 			message.mode = "leave";
-			if(game.users.size() < 2) {
+			if(game.users.size() < 2 || this.locomotive) {
 				message.errorLevel = Globals.ERROR_LEVEL_ERROR;
 				sendToGameClients(gson.toJson(message));
 				Globals.GAMES.remove(game);
 				game = null;
 			} else {
+				if(game.gamePaused > 0) {
+					game.gamePaused -= (int) game.gamePaused / game.gameActive;
+					if(this.pausedBy) {
+						Message messageResume = new Message();
+						messageResume.mode = "resume";
+						sendToGameClients(gson.toJson(messageResume));
+					}
+				}
 				message.sessionName = this.sessionName;
 				message.errorLevel = Globals.ERROR_LEVEL_WARNING;
 				sendToGameClients(gson.toJson(message));				
@@ -120,6 +131,7 @@ public class Sessions {
 					return g1.gameId < g2.gameId ? -1 : 1;
 				}
 			});
+			this.locomotive = true;
 			int tempGameId = 0;
 			Iterator<Game> iterator = Globals.GAMES.iterator();
 			while (iterator.hasNext()) {
@@ -181,14 +193,30 @@ public class Sessions {
 				sendToGameClients(gson.toJson(obj));
 			}
 			break;
+		// True, if client requests a pause
+		case "pause-request":
+			this.pausedBy = true;
+			Message messagePause = new Message();
+			messagePause.mode = "pause";
+			sendToGameClients(gson.toJson(messagePause));
+			break;
 		// True, if client pauses game
 		case "pause":
 			game.gamePaused++;
 			sendToGameClients(gson.toJson(obj));
 			break;
+		// True, if client requests a resume
+		case "resume-request":
+			this.pausedBy = false;
+			Message messageResume = new Message();
+			messageResume.mode = "resume";
+			sendToGameClients(gson.toJson(messageResume));
+			break;
 		// True, if client resumes game
 		case "resume":
-			game.gamePaused--;
+			if(game.gamePaused > 0) {
+				game.gamePaused--;
+			}
 			if (game.gamePaused == 0) {
 				sendToGameClients(gson.toJson(obj));
 			}
