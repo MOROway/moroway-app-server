@@ -7,6 +7,7 @@ public class Game {
 	public String gameKey;
 	public int gameActive = 0;
 	public int gamePaused = 0;
+	public int gamePausedByClients = 0;
 	public int gameSyncBreak = 0;
     public ArrayList<Sessions> users = new ArrayList<>();
 

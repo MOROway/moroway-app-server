@@ -68,8 +68,13 @@ public class Sessions {
 				game = null;
 			} else {
 				if(game.gamePaused > 0) {
-					game.gamePaused -= (int) game.gamePaused / game.gameActive;
-					if(this.pausedBy) {
+					game.gamePaused--;
+				}
+				if(this.pausedBy) {
+					if(game.gamePausedByClients > 0) {
+						game.gamePausedByClients--;
+					}
+					if(game.gamePausedByClients == 0) {
 						Message messageResume = new Message();
 						messageResume.mode = "resume";
 						sendToGameClients(gson.toJson(messageResume));
@@ -195,30 +200,40 @@ public class Sessions {
 			break;
 		// True, if client requests a pause
 		case "pause-request":
-			this.pausedBy = true;
-			Message messagePause = new Message();
-			messagePause.mode = "pause";
-			sendToGameClients(gson.toJson(messagePause));
+			if(!this.pausedBy) {
+				this.pausedBy = true;
+				if(game.gamePausedByClients < game.users.size()) {
+					game.gamePausedByClients++;
+				}
+				Message messagePause = new Message();
+				messagePause.mode = "pause";
+				sendToGameClients(gson.toJson(messagePause));
+			}
 			break;
 		// True, if client pauses game
 		case "pause":
-			game.gamePaused++;
-			sendToGameClients(gson.toJson(obj));
+			if(game.gamePaused < game.users.size()) {
+				game.gamePaused++;
+			}
 			break;
 		// True, if client requests a resume
 		case "resume-request":
-			this.pausedBy = false;
-			Message messageResume = new Message();
-			messageResume.mode = "resume";
-			sendToGameClients(gson.toJson(messageResume));
+			if(this.pausedBy) {
+				this.pausedBy = false;
+				if(game.gamePausedByClients > 0) {
+					game.gamePausedByClients--;
+				}
+				if(game.gamePausedByClients == 0) {
+					Message messageResume = new Message();
+					messageResume.mode = "resume";
+					sendToGameClients(gson.toJson(messageResume));
+				}
+			}
 			break;
 		// True, if client resumes game
 		case "resume":
 			if(game.gamePaused > 0) {
 				game.gamePaused--;
-			}
-			if (game.gamePaused == 0) {
-				sendToGameClients(gson.toJson(obj));
 			}
 			break;
 		// True, if client sends unknown request
