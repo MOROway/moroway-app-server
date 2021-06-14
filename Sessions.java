@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -61,9 +63,13 @@ public class Sessions {
 			game.gameActive--;
 			Message message = new Message();
 			message.mode = "leave";
-			if(game.users.size() < 2 || this.locomotive) {
+			if(game.users.size() < 2 || this.locomotive || game.gameActive != game.users.size()) {
 				message.errorLevel = Globals.ERROR_LEVEL_ERROR;
 				sendToGameClients(gson.toJson(message));
+				if(game.syncTimeout != null) {
+					game.syncTimeout.cancel();
+					game.syncTimeout.purge();
+				}
 				Globals.GAMES.remove(game);
 				game = null;
 			} else {
@@ -185,16 +191,37 @@ public class Sessions {
 			game.gameSyncBreak++;
 			if (game.gameSyncBreak == game.users.size()) {
 				sendToGameClients(gson.toJson(obj));
+			} else {
+				if(game.syncTimeout != null) {
+					game.syncTimeout.cancel();
+					game.syncTimeout.purge();
+				}
+				game.syncTimeout = new Timer();
+				game.syncTimeout.schedule(new TimerTask() {
+					@Override
+					public void run() {
+						Message abort = new Message();
+						abort.mode = "sync-done";
+						abort.message = "sync-cancel";
+						abort.sessionId = sessionId;
+						abort.sessionName = sessionName;
+						abort.gameId = game.gameId;
+						abort.gameKey = game.gameKey;
+						abort.errorLevel = Globals.ERROR_LEVEL_WARNING;
+						game.gameSyncBreak = 0;
+						sendToGameClients(gson.toJson(abort));
+					}
+				}, 7500);
 			}
 			break;
-		// True, if client couldn't finish sync (after sync-task)
-		case "sync-cancel":
-			obj.mode = "sync-done";
-			obj.errorLevel = Globals.ERROR_LEVEL_WARNING;
 		// True, if client finished sync (after sync-task)
 		case "sync-done":
 			game.gameSyncBreak--;
 			if (game.gameSyncBreak == 0) {
+				if(game.syncTimeout != null) {
+					game.syncTimeout.cancel();
+					game.syncTimeout.purge();
+				}
 				sendToGameClients(gson.toJson(obj));
 			}
 			break;
@@ -236,6 +263,13 @@ public class Sessions {
 				game.gamePaused--;
 			}
 			break;
+		// True, if client send chat message
+		case "chat-msg":
+			if (obj.message.length() > 500) {
+				obj.message = obj.message.substring(0, 500);
+			}
+			sendToGameClients(gson.toJson(obj));
+			break;
 		// True, if client sends unknown request
 		default:
 			obj.mode = "unknown";
@@ -251,22 +285,28 @@ public class Sessions {
 	}
 
 	private void sendToClient(String message) {
-		try {
-			session.getBasicRemote().sendText(message);
-		} catch (IOException e) {
-			e.printStackTrace();
+		if(session != null && session.isOpen()) {
+			try {
+				session.getBasicRemote().sendText(message);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
 	private void sendToGameClients(String message) {
 		if (game != null && game.users != null) {
-			Iterator<Sessions> iterator = game.users.iterator();
-			while (iterator.hasNext()) {
-				Sessions currentSession = iterator.next();
-				try {
-					currentSession.session.getBasicRemote().sendText(message);
-				} catch (IOException e) {
-					e.printStackTrace();
+			synchronized(game.users) {
+				Iterator<Sessions> iterator = game.users.iterator();
+				while (iterator.hasNext()) {
+					Sessions currentSession = iterator.next();
+					if(currentSession.session != null && currentSession.session.isOpen()) {
+						try {
+							currentSession.session.getBasicRemote().sendText(message);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 		}
@@ -282,6 +322,7 @@ public class Sessions {
 					game.users.add(this);
 					// Send game key to requesting client
 					obj.errorLevel = Globals.ERROR_LEVEL_OKAY;
+					obj.message = Integer.toString(currentGame.users.size());
 					sendToGameClients(gson.toJson(obj));
 					return true;
 				} else {
