@@ -55,44 +55,6 @@ public class Sessions {
 		Globals.SESSIONS.add(this);
 	}
 
-	@OnClose
-	public void onClose() {
-		Globals.SESSIONS.remove(this);
-		if (game != null) {
-			game.users.remove(this);
-			game.gameActive--;
-			Message message = new Message();
-			message.mode = "leave";
-			if(game.users.size() < 2 || this.locomotive || game.gameActive != game.users.size()) {
-				message.errorLevel = Globals.ERROR_LEVEL_ERROR;
-				sendToGameClients(gson.toJson(message));
-				if(game.syncTimeout != null) {
-					game.syncTimeout.cancel();
-					game.syncTimeout.purge();
-				}
-				Globals.GAMES.remove(game);
-				game = null;
-			} else {
-				if(game.gamePaused > 0) {
-					game.gamePaused--;
-				}
-				if(this.pausedBy) {
-					if(game.gamePausedByClients > 0) {
-						game.gamePausedByClients--;
-					}
-					if(game.gamePausedByClients == 0) {
-						Message messageResume = new Message();
-						messageResume.mode = "resume";
-						sendToGameClients(gson.toJson(messageResume));
-					}
-				}
-				message.sessionName = this.sessionName;
-				message.errorLevel = Globals.ERROR_LEVEL_WARNING;
-				sendToGameClients(gson.toJson(message));				
-			}
-		}
-	}
-
 	@OnMessage
 	public void onMessage(String message) {
 
@@ -279,9 +241,51 @@ public class Sessions {
 
 	}
 
+	@OnClose
+	public void onClose() {
+		destroy();
+	}
+
 	@OnError
-	public void onError(Throwable t) throws Throwable {
-		t.printStackTrace();
+	public void onError(Throwable t) {
+		destroy();
+	}
+
+	private void destroy() {
+		Globals.SESSIONS.remove(this);
+		if (game != null) {
+			game.users.remove(this);
+			game.gameActive--;
+			Message message = new Message();
+			message.mode = "leave";
+			if(game.users.size() < 2 || this.locomotive || game.gameActive != game.users.size()) {
+				message.errorLevel = Globals.ERROR_LEVEL_ERROR;
+				sendToGameClients(gson.toJson(message));
+				if(game.syncTimeout != null) {
+					game.syncTimeout.cancel();
+					game.syncTimeout.purge();
+				}
+				Globals.GAMES.remove(game);
+				game = null;
+			} else {
+				if(game.gamePaused > 0) {
+					game.gamePaused--;
+				}
+				if(this.pausedBy) {
+					if(game.gamePausedByClients > 0) {
+						game.gamePausedByClients--;
+					}
+					if(game.gamePausedByClients == 0) {
+						Message messageResume = new Message();
+						messageResume.mode = "resume";
+						sendToGameClients(gson.toJson(messageResume));
+					}
+				}
+				message.sessionName = this.sessionName;
+				message.errorLevel = Globals.ERROR_LEVEL_WARNING;
+				sendToGameClients(gson.toJson(message));
+			}
+		}
 	}
 
 	private void sendToClient(String message) {
@@ -334,7 +338,7 @@ public class Sessions {
 		sendToClient(gson.toJson(obj));
 		return false;
 	}
-	
+
 	private String getKeyString(int length) {
 		String alphabet = "abcdefghijklmnopqrstuvwxyz";
 		double valueForNumber = 0.3;
@@ -348,10 +352,10 @@ public class Sessions {
 				if(random-valueForNumber < (1-valueForNumber)*0.5) {
 					toAdd = Character.toUpperCase(toAdd);
 				}
-				key += toAdd;                            
+				key += toAdd;
 			}
 		}
 		return key;
-	} 
+	}
 
 }
