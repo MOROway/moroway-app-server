@@ -14,7 +14,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 
 @ServerEndpoint(value = "/moroway-app-java/")
 public class Sessions {
@@ -340,7 +341,7 @@ public class Sessions {
 	}
 
 	private String getKeyString(int length) {
-		String alphabet = "abcdefghijklmnopqrstuvwxyz";
+		String alphabet = "abcdefghjkmnpqrstuvwxyz"; //without i, l and o to avoid confusion (I/l) and (0/O)
 		double valueForNumber = 0.3;
 		String key = "";
 		for(int i = 0; i < length; i++) {
