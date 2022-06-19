@@ -349,7 +349,7 @@ public class Sessions {
 			if (random < valueForNumber) {
 				key += (int) (random * (1/valueForNumber) * 10);
 			}  else {
-				char toAdd = alphabet.charAt((int) (random * alphabet.length()));
+				char toAdd = alphabet.charAt((int) ((random-valueForNumber)  * (1/(1-valueForNumber)) * alphabet.length()));
 				if(random-valueForNumber < (1-valueForNumber)*0.5) {
 					toAdd = Character.toUpperCase(toAdd);
 				}
