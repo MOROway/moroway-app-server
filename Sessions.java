@@ -68,8 +68,8 @@ public class Sessions {
 		obj.sessionName = this.sessionName;
 
 		switch (obj.mode) {
-		// True, if client first calls
 		case "hello":
+			// Client first calls
 			double version = Double.parseDouble(obj.message);
 			if (version < Globals.VERSION_MIN) {
 				obj.errorLevel = Globals.ERROR_LEVEL_ERROR;
@@ -80,8 +80,8 @@ public class Sessions {
 			}
 			sendToClient(gson.toJson(obj));
 			break;
-		// True, if client sends player name
 		case "init":
+			// Client sends player name
 			String pattern = "[^a-zA-Z0-9]";
 			if (obj.message == null || obj.message.replaceAll(pattern, "").equals("")) {
 				obj.message = "anonymous";
@@ -93,8 +93,8 @@ public class Sessions {
 			obj.errorLevel = Globals.ERROR_LEVEL_OKAY;
 			sendToClient(gson.toJson(obj));
 			break;
-		// True, if client requests to set up a new game
 		case "connect":
+			// Client requests to set up a new game
 			// Sort games and get smallest "free" game id
 			Collections.sort(Globals.GAMES, new Comparator<Game>() {
 				@Override
@@ -120,14 +120,14 @@ public class Sessions {
 			Globals.GAMES.add(new Game(obj.gameId, obj.gameKey));
 			initGame(obj);
 			break;
-		// True, if client requests to join a game
 		case "join":
+			// Client requests to join a game
 			if (obj.gameKey != null) {
 				initGame(obj);
 			}
 			break;
-		// True, if clients wants to start the game
 		case "start":
+			// Client wants to start the game
 			if (game != null) {
 				game.gameActive++;
 				if (game.gameActive == game.users.size()) {
@@ -138,16 +138,16 @@ public class Sessions {
 				sendToGameClients(gson.toJson(obj));
 			}
 			break;
-		// True, if action is triggered
 		case "action":
-			// True, if client sends sync request
+			// Client triggers action
 		case "sync-request":
-			// True, if client sends sync task (after sync-ready)
+			// Client sends sync request
 		case "sync-task":
+			// Client sends sync task (after sync-ready)
 			sendToGameClients(gson.toJson(obj));
 			break;
-		// True, if client is sync ready (after sync-request)
 		case "sync-ready":
+			// Client is sync ready (after sync-request)
 			game.gameSyncBreak++;
 			if (game.gameSyncBreak == game.users.size()) {
 				sendToGameClients(gson.toJson(obj));
@@ -174,8 +174,8 @@ public class Sessions {
 				}, 7500);
 			}
 			break;
-		// True, if client finished sync (after sync-task)
 		case "sync-done":
+			// Client finished sync (after sync-task)
 			game.gameSyncBreak--;
 			if (game.gameSyncBreak == 0) {
 				if (game.syncTimeout != null) {
@@ -185,8 +185,8 @@ public class Sessions {
 				sendToGameClients(gson.toJson(obj));
 			}
 			break;
-		// True, if client requests a pause
 		case "pause-request":
+			// Client requests a pause
 			if (!this.pausedBy) {
 				this.pausedBy = true;
 				if (game.gamePausedByClients < game.users.size()) {
@@ -197,14 +197,14 @@ public class Sessions {
 				sendToGameClients(gson.toJson(messagePause));
 			}
 			break;
-		// True, if client pauses game
 		case "pause":
+			// Client pauses game
 			if (game.gamePaused < game.users.size()) {
 				game.gamePaused++;
 			}
 			break;
-		// True, if client requests a resume
 		case "resume-request":
+			// Client requests a resume
 			if (this.pausedBy) {
 				this.pausedBy = false;
 				if (game.gamePausedByClients > 0) {
@@ -217,21 +217,21 @@ public class Sessions {
 				}
 			}
 			break;
-		// True, if client resumes game
 		case "resume":
+			// Client resumes game
 			if (game.gamePaused > 0) {
 				game.gamePaused--;
 			}
 			break;
-		// True, if client send chat message
 		case "chat-msg":
+			// Client sends a chat message
 			if (obj.message.length() > 500) {
 				obj.message = obj.message.substring(0, 500);
 			}
 			sendToGameClients(gson.toJson(obj));
 			break;
-		// True, if client sends unknown request
 		default:
+			// Client sends an unknown request
 			obj.mode = "unknown";
 			obj.errorLevel = Globals.ERROR_LEVEL_ERROR;
 			sendToClient(gson.toJson(obj));
