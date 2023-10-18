@@ -30,9 +30,6 @@ public class Sessions {
 
 	private final Gson gson = new Gson();
 
-	public Sessions() {
-	}
-
 	@OnOpen
 	public void onOpen(Session session) {
 		this.session = session;
@@ -118,7 +115,7 @@ public class Sessions {
 			}
 			// Set game id and key
 			obj.gameId = tempGameId;
-			obj.gameKey = getKeyString((int)(Math.random()*3+5));
+			obj.gameKey = getKeyString((int) (Math.random() * 3 + 5));
 			// Add game
 			Globals.GAMES.add(new Game(obj.gameId, obj.gameKey));
 			initGame(obj);
@@ -143,9 +140,9 @@ public class Sessions {
 			break;
 		// True, if action is triggered
 		case "action":
-		// True, if client sends sync request
+			// True, if client sends sync request
 		case "sync-request":
-		// True, if client sends sync task (after sync-ready)
+			// True, if client sends sync task (after sync-ready)
 		case "sync-task":
 			sendToGameClients(gson.toJson(obj));
 			break;
@@ -155,7 +152,7 @@ public class Sessions {
 			if (game.gameSyncBreak == game.users.size()) {
 				sendToGameClients(gson.toJson(obj));
 			} else {
-				if(game.syncTimeout != null) {
+				if (game.syncTimeout != null) {
 					game.syncTimeout.cancel();
 					game.syncTimeout.purge();
 				}
@@ -181,7 +178,7 @@ public class Sessions {
 		case "sync-done":
 			game.gameSyncBreak--;
 			if (game.gameSyncBreak == 0) {
-				if(game.syncTimeout != null) {
+				if (game.syncTimeout != null) {
 					game.syncTimeout.cancel();
 					game.syncTimeout.purge();
 				}
@@ -190,9 +187,9 @@ public class Sessions {
 			break;
 		// True, if client requests a pause
 		case "pause-request":
-			if(!this.pausedBy) {
+			if (!this.pausedBy) {
 				this.pausedBy = true;
-				if(game.gamePausedByClients < game.users.size()) {
+				if (game.gamePausedByClients < game.users.size()) {
 					game.gamePausedByClients++;
 				}
 				Message messagePause = new Message();
@@ -202,18 +199,18 @@ public class Sessions {
 			break;
 		// True, if client pauses game
 		case "pause":
-			if(game.gamePaused < game.users.size()) {
+			if (game.gamePaused < game.users.size()) {
 				game.gamePaused++;
 			}
 			break;
 		// True, if client requests a resume
 		case "resume-request":
-			if(this.pausedBy) {
+			if (this.pausedBy) {
 				this.pausedBy = false;
-				if(game.gamePausedByClients > 0) {
+				if (game.gamePausedByClients > 0) {
 					game.gamePausedByClients--;
 				}
-				if(game.gamePausedByClients == 0) {
+				if (game.gamePausedByClients == 0) {
 					Message messageResume = new Message();
 					messageResume.mode = "resume";
 					sendToGameClients(gson.toJson(messageResume));
@@ -222,7 +219,7 @@ public class Sessions {
 			break;
 		// True, if client resumes game
 		case "resume":
-			if(game.gamePaused > 0) {
+			if (game.gamePaused > 0) {
 				game.gamePaused--;
 			}
 			break;
@@ -259,24 +256,24 @@ public class Sessions {
 			game.gameActive--;
 			Message message = new Message();
 			message.mode = "leave";
-			if(game.users.size() < 2 || this.locomotive || game.gameActive != game.users.size()) {
+			if (game.users.size() < 2 || this.locomotive || game.gameActive != game.users.size()) {
 				message.errorLevel = Globals.ERROR_LEVEL_ERROR;
 				sendToGameClients(gson.toJson(message));
-				if(game.syncTimeout != null) {
+				if (game.syncTimeout != null) {
 					game.syncTimeout.cancel();
 					game.syncTimeout.purge();
 				}
 				Globals.GAMES.remove(game);
 				game = null;
 			} else {
-				if(game.gamePaused > 0) {
+				if (game.gamePaused > 0) {
 					game.gamePaused--;
 				}
-				if(this.pausedBy) {
-					if(game.gamePausedByClients > 0) {
+				if (this.pausedBy) {
+					if (game.gamePausedByClients > 0) {
 						game.gamePausedByClients--;
 					}
-					if(game.gamePausedByClients == 0) {
+					if (game.gamePausedByClients == 0) {
 						Message messageResume = new Message();
 						messageResume.mode = "resume";
 						sendToGameClients(gson.toJson(messageResume));
@@ -290,7 +287,7 @@ public class Sessions {
 	}
 
 	private void sendToClient(String message) {
-		if(session != null && session.isOpen()) {
+		if (session != null && session.isOpen()) {
 			try {
 				session.getBasicRemote().sendText(message);
 			} catch (IOException e) {
@@ -301,11 +298,11 @@ public class Sessions {
 
 	private void sendToGameClients(String message) {
 		if (game != null && game.users != null) {
-			synchronized(game.users) {
+			synchronized (game.users) {
 				Iterator<Sessions> iterator = game.users.iterator();
 				while (iterator.hasNext()) {
 					Sessions currentSession = iterator.next();
-					if(currentSession.session != null && currentSession.session.isOpen()) {
+					if (currentSession.session != null && currentSession.session.isOpen()) {
 						try {
 							currentSession.session.getBasicRemote().sendText(message);
 						} catch (IOException e) {
@@ -341,16 +338,17 @@ public class Sessions {
 	}
 
 	private String getKeyString(int length) {
-		String alphabet = "abcdefghjkmnpqrstuvwxyz"; //without i, l and o to avoid confusion (I/l) and (0/O)
+		String alphabet = "abcdefghjkmnpqrstuvwxyz"; // without i, l and o to avoid confusion (I/l) and (0/O)
 		double valueForNumber = 0.3;
 		String key = "";
-		for(int i = 0; i < length; i++) {
+		for (int i = 0; i < length; i++) {
 			double random = Math.random();
 			if (random < valueForNumber) {
 				key += (int) (random / valueForNumber * 10);
-			}  else {
-				char toAdd = alphabet.charAt((int) ((random-valueForNumber)  / (1-valueForNumber) * alphabet.length()));
-				if(Math.random() < 0.5) {
+			} else {
+				char toAdd = alphabet
+						.charAt((int) ((random - valueForNumber) / (1 - valueForNumber) * alphabet.length()));
+				if (Math.random() < 0.5) {
 					toAdd = Character.toUpperCase(toAdd);
 				}
 				key += toAdd;
