@@ -1,19 +1,22 @@
 package morowayAppTeamplay;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-public class Globals {
+class Globals {
+	static final List<Client> CLIENTS = Collections.synchronizedList(new ArrayList<>());
+	static final List<Game> GAMES = Collections.synchronizedList(new ArrayList<>());
 
-	public static final ArrayList<Sessions> SESSIONS = new ArrayList<>();
-	public static final ArrayList<Game> GAMES = new ArrayList<>();
+	static final int GAME_MAX_PLAYERS = 4;
 
-	public static final double VERSION_CURRENT = 10.2;
-	public static final double VERSION_MIN = 10.0;
+	static final double VERSION_CURRENT = 10.3;
+	static final double VERSION_MIN = 10.3;
 
-	public static final int ERROR_LEVEL_OKAY = 0;
-	public static final int ERROR_LEVEL_WARNING = 1;
-	public static final int ERROR_LEVEL_ERROR = 2;
+	static final int ERROR_LEVEL_OKAY = 0;
+	static final int ERROR_LEVEL_WARNING = 1;
+	static final int ERROR_LEVEL_ERROR = 2;
 
-	public static final int GAME_MAX_PLAYERS = 4;
+	static final boolean DEBUG = false;
 
 }

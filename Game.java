@@ -1,21 +1,42 @@
 package morowayAppTeamplay;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Timer;
+import java.util.TimerTask;
 
-public class Game {
-	public int gameId;
-	public String gameKey;
-	public int gameActive = 0;
-	public int gamePaused = 0;
-	public int gamePausedByClients = 0;
-	public int gameSyncBreak = 0;
-	public Timer syncTimeout = new Timer();
-	public ArrayList<Sessions> users = new ArrayList<>();
+class Game {
+	final List<Client> clients = Collections.synchronizedList(new ArrayList<>());
+	final List<Client> clientsActive = Collections.synchronizedList(new ArrayList<>());
+	final List<Client> clientsPaused = Collections.synchronizedList(new ArrayList<>());
+	final List<Client> clientsPausedBy = Collections.synchronizedList(new ArrayList<>());
+	final List<Client> clientsSyncing = Collections.synchronizedList(new ArrayList<>());
 
-	Game(int gameId, String gameKey) {
-		this.gameId = gameId;
-		this.gameKey = gameKey;
+	final int id;
+	final String key;
+
+	Timer syncTimeout = new Timer();
+	TimerTask syncTimeoutTask;
+
+	Game(int gameId, String gameKey, Client client) {
+		id = gameId;
+		key = gameKey;
+		clients.add(client);
+	}
+
+	void clearSyncTimeout() {
+		if (syncTimeoutTask != null) {
+			syncTimeoutTask.cancel();
+		}
+		if (syncTimeout != null) {
+			syncTimeout.cancel();
+			syncTimeout.purge();
+		}
+	}
+
+	void clearTimeouts() {
+		clearSyncTimeout();
 	}
 
 }
